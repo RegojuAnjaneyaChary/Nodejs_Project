@@ -3,7 +3,7 @@ const Router = express.Router();
 const {getProfile, editProfile}=require("../Controllers/userControllers.js")
 const {tokenValidator, validateMiddleware, editProfileValidator}= require("../Validators/authValidators.js")
 const { checkAuth } = require("../Middlewares/authMiddleware.js");
-const {upload}=require("../Utils/multerFileupload.js")
+const {upload}=require("../Utils/multerFile.js")
 
 Router.get("/profile", tokenValidator, validateMiddleware, checkAuth, getProfile);
 
