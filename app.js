@@ -11,11 +11,7 @@ const cors = require("cors")
 
 connectDatabase();
 
-app.use(cors({
-  // origin: ["http://localhost:5173", "http://localhost:5175"], // allowed origins
-  // credentials: true // this allows cookies, sessions, and Authorization headers
-  //full access 
-}));
+app.use(cors());
 
 
 app.use(express.json());
