@@ -3,22 +3,9 @@ const{TaskModel}= require("../Models/taskModel.js")
 
 exports.getAllemployees = async(req, res, next) => {
    try {
-    //    const employees = await UserModel.find().where({ role: "employee" });
-       //        res.json({ message: "employee information", data: employees });
+       const employees = await UserModel.find().where({ role: "employee" });
+              res.json({ message: "employee information", data: employees });
        
-        const users = await UserModel.find({
-      role: { $in: ["employee", "manager"] }
-    }).select("name username role");
-
-    res.json({
-      message: "User information",
-      data: users.map(user => ({
-        id: user._id,
-        name: user.name,
-        username: user.username,
-        role: user.role
-      }))
-    });
    } catch (error) {
        console.log(error)
            const err = { statusCode: 400, message: error.message };
