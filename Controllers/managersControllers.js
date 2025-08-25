@@ -3,18 +3,30 @@ const{TaskModel}= require("../Models/taskModel.js")
 
 exports.getAllemployees = async(req, res, next) => {
    try {
-    //    const employees = await UserModel.find().where({ role: "employee" || "manager" });
-const employees = await UserModel.find({
-  role: { $in: ["employee", "manager"] }
-}).select("name username role");
+    //    const employees = await UserModel.find().where({ role: "employee" });
 
-       res.json({ message: "employee information", data: employees });
-   } catch (error) {
-       console.log(error)
-           const err = { statusCode: 400, message: error.message };
-           next(err);
-       }
+
+//        res.json({ message: "employee information", data: employees });
+//    } catch (error) {
+//        console.log(error)
+//            const err = { statusCode: 400, message: error.message };
+//            next(err);
+//        }
+
     
+    const users = await UserModel.find({
+      role: { $in: ["employee", "manager"] }
+    }).select("name username role");
+
+    res.json({
+      message: "User information",
+      data: users.map(user => ({
+        id: user._id,
+        name: user.name,
+        username: user.username,
+        role: user.role
+      }))
+    });
    }
    
 exports.createTicket = async(req, res, next) => {
