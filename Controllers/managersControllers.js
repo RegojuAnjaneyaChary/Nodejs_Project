@@ -3,7 +3,7 @@ const{TaskModel}= require("../Models/taskModel.js")
 
 exports.getAllemployees = async(req, res, next) => {
    try {
-       const employees = await UserModel.find().where({ role: "employee" });
+       const employees = await UserModel.find().where({ role: "employee"||"manager" });
        res.json({ message: "employee information", data: employees });
    } catch (error) {
        console.log(error)
