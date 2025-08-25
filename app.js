@@ -18,38 +18,24 @@ const allowedOrigins = [
   "http://localhost:5174"
 ];
 
-// Defensive CORS headers to ensure proxies always include them
-app.use((req, res, next) => {
-  const requestOrigin = req.headers.origin;
-  if (!requestOrigin || allowedOrigins.includes(requestOrigin)) {
-    if (requestOrigin) {
-      res.header("Access-Control-Allow-Origin", requestOrigin);
-    }
-    res.header("Vary", "Origin");
-    res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  }
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(204);
-  }
-  next();
-});
-
 // CORS middleware (JWT via Authorization header; no cookies)
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
-      return callback(null, true);
+      return callback(null, origin);
     }
     return callback(new Error("Not allowed by CORS"));
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: false
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 };
 app.use(cors(corsOptions));
 
-// Preflight will be handled by cors() middleware above under Express 5
+// Handle preflight OPTIONS requests explicitly
+app.options("*", cors(corsOptions));
 
 // Body parsers
 app.use(express.json());
