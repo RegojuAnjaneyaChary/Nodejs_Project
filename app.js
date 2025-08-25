@@ -11,18 +11,19 @@ const employeeRoutes = require("./Routes/employeeRoutes.js");
 
 connectDatabase();
 
-// Allowed origins for development (and you can add production later)
+// Allowed origins
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5175"
 ];
 
+// CORS middleware
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, origin); // Allow the origin
+      callback(null, origin);
     } else {
-      callback(new Error("Not allowed by CORS")); // Block others
+      callback(new Error("Not allowed by CORS"));
     }
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -30,14 +31,21 @@ app.use(cors({
   credentials: true
 }));
 
-// Explicitly handle preflight OPTIONS requests
+// Handle preflight OPTIONS requests correctly
 app.options("*", cors({
-  origin: allowedOrigins,
-  credentials: true,
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, origin);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
 }));
 
+// Body parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -50,6 +58,6 @@ app.use("/employee", employeeRoutes);
 // Error handler
 app.use(errorHandler);
 
-app.listen(process.env.port, () =>
-  console.log("server started on " + process.env.port)
-);
+// Start server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log("Server started on " + PORT));
