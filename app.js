@@ -14,7 +14,8 @@ connectDatabase();
 // Allowed origins
 const allowedOrigins = [
   "http://localhost:5173",
-  "http://localhost:5175"
+  "http://localhost:5175",
+  "http://localhost:5174"
 ];
 
 // CORS middleware (JWT via Authorization header; no cookies)
@@ -31,8 +32,7 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Handle preflight OPTIONS requests correctly
-app.options("*", cors(corsOptions));
+// Preflight will be handled by cors() middleware above under Express 5
 
 // Body parsers
 app.use(express.json());
