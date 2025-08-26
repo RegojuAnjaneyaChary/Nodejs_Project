@@ -14,30 +14,15 @@ const { errorHandler } = require("./Middlewares/errorMiddleware.js");
 // Connect to database
 connectDatabase();
 
-// ✅ Allowed frontend origins
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "http://localhost:5175"
-];
-
-// ✅ CORS configuration
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl, etc.)
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175"
+  ],
   credentials: true
-};
+}));
 
-// ✅ Use CORS middleware
-app.use(cors(corsOptions));
 
 // ✅ Automatically handle preflight requests
 // (You don't need `app.options("*")` separately)
