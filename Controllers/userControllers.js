@@ -3,15 +3,50 @@ const bcryptjs = require("bcryptjs");
 const {cloudnaryFileUpload} = require("../Utils/cloudinary.js");
 const fs = require("fs");
 
-exports.getProfile = async(req, res, next) => {
-    try {
-        const user = await UserModel.findById(req.userInfo.id);
-        res.json(user);
-        console.log(user)
-    } catch (error) {
-        next({statusCode: 400, message:error.message})
+// exports.getProfile = async(req, res, next) => {
+//     try {
+//         const user = await UserModel.findById(req.userInfo.id);
+//         res.json(user);
+//         console.log(user)
+//     } catch (error) {
+//         next({statusCode: 400, message:error.message})
+//     }
+// };
+
+
+// new code
+
+
+// Role-based profile retrieval
+exports.getProfile = async (req, res, next) => {
+  try {
+    const userId = req.userInfo.id;      // from JWT middleware
+    const userRole = req.userInfo.role;  // role from JWT middleware
+
+    let user;
+
+    if (userRole === "manager") {
+      // Manager sees all employees
+      user = await UserModel.find({ role: "employee" }).select("-password");
+    } else {
+      // Employee sees only their own profile
+      user = await UserModel.findById(userId).select("-password");
+      if (! user) {
+        return res.status(404).json({ message: "User not found" });
+      }
     }
+
+    res.json(user);
+    console.log("Profile data:", user);
+  } catch (error) {
+    console.error("Error fetching profile:", error.message);
+    next({ statusCode: 400, message: error.message });
+  }
 };
+
+
+
+
 
 
 exports.editProfile = async (req, res) => {

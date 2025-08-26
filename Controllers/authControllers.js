@@ -4,14 +4,15 @@ const {generateToken}=require("../Utils/token.js");
 
 const signupController = async(req, res, next) => {
     try {
-        const { name, username, email, password } = req.body
+        const { name, username, email, password, role } = req.body
         const hashPassword = await bcryptjs.hash(password, 12);
          
         const user = await UserModel.create({
             name: name,
             username: username,
             email: email,
-            password: hashPassword
+            password: hashPassword,
+            role:role
             
         })
 
