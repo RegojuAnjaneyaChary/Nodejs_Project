@@ -1,21 +1,7 @@
-const {UserModel} = require("../Models/authModel.js")
+const { UserModel } = require("../Models/authModel.js")
 const bcryptjs = require("bcryptjs");
-const {cloudnaryFileUpload} = require("../Utils/cloudinary.js");
+const { cloudinaryFileUpload } = require("../Utils/cloudinary.js");
 const fs = require("fs");
-
-// exports.getProfile = async(req, res, next) => {
-//     try {
-//         const user = await UserModel.findById(req.userInfo.id);
-//         res.json(user);
-//         console.log(user)
-//     } catch (error) {
-//         next({statusCode: 400, message:error.message})
-//     }
-// };
-
-
-// new code
-
 
 // Role-based profile retrieval
 exports.getProfile = async (req, res, next) => {
@@ -31,7 +17,7 @@ exports.getProfile = async (req, res, next) => {
     } else {
       // Employee sees only their own profile
       user = await UserModel.findById(userId).select("-password");
-      if (! user) {
+      if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
     }
@@ -44,78 +30,134 @@ exports.getProfile = async (req, res, next) => {
   }
 };
 
-
-
-
-
-
 exports.editProfile = async (req, res) => {
-    try {
-        const { name, username, password, email } = req.body;
-        const profileImage = req.file;
-        // console.log(profileImage);
-        const fileurl = await cloudnaryFileUpload(profileImage.path);
-        // console.log(fileurl);
-        fs.unlinkSync(profileImage.path);
-        const userId = req.userInfo.id;
+  try {
+    console.log("=== EditProfile request received ===");
+    console.log("Request body:", req.body);
+    console.log("Request file:", req.file);
+    console.log("User ID:", req.userInfo.id);
+    console.log("User info:", req.userInfo);
 
-        console.log(userId)
-        if (name || username || password || email) {
-            const hashPassword = await bcryptjs.hash(password, 12);
-            const updateUser = await UserModel.findByIdAndUpdate(userId, {
-                name,
-                password: hashPassword,
-                email,
-                username,
-                profilePic:fileurl,
-            }, { new: true });
-            console.log(updateUser);
+    const { name, username, password, email } = req.body;
+    const userId = req.userInfo.id;
 
-            res.json({ message: "profile updated", updateUser });
-        } 
-    } catch (error) {
-        console.log(error);
-        res.json(error);
+    // Build update object with only provided fields
+    let updateFields = {};
+
+    if (name) {
+      updateFields.name = name;
+      console.log("Adding name to update:", name);
+    }
+    if (username) {
+      updateFields.username = username;
+      console.log("Adding username to update:", username);
+    }
+    if (email) {
+      updateFields.email = email;
+      console.log("Adding email to update:", email);
     }
 
+    // Handle password only if provided
+    if (password && password.trim() !== "") {
+      console.log("Processing password update");
+      const hashPassword = await bcryptjs.hash(password, 12);
+      updateFields.password = hashPassword;
+    }
+
+    // Handle profile image only if provided
+    if (req.file) {
+      console.log("=== Processing file upload ===");
+      console.log("File details:", req.file);
+
+      try {
+        // Check if file exists
+        if (!fs.existsSync(req.file.path)) {
+          throw new Error("Uploaded file not found on server");
+        }
+
+        console.log("File exists at path:", req.file.path);
+        console.log("File size:", req.file.size);
+
+        const fileurl = await cloudinaryFileUpload(req.file.path);
+        console.log("Cloudinary upload successful:", fileurl);
+
+        // Delete local file after successful upload
+        fs.unlinkSync(req.file.path);
+        console.log("Local file deleted");
+
+        updateFields.profilePic = fileurl;
+        console.log("Profile pic URL added to update fields:", fileurl);
+
+      } catch (uploadError) {
+        console.error("=== Image upload error ===");
+        console.error("Error details:", uploadError);
+        console.error("Error message:", uploadError.message);
+        console.error("Error stack:", uploadError.stack);
+
+        // Clean up local file if it exists
+        if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+          try {
+            fs.unlinkSync(req.file.path);
+            console.log("Cleaned up local file after error");
+          } catch (cleanupError) {
+            console.error("Error cleaning up file:", cleanupError);
+          }
+        }
+
+        return res.status(500).json({
+          message: `Failed to upload image: ${uploadError.message}`,
+          details: uploadError.stack
+        });
+      }
+    } else {
+      console.log("No file uploaded");
+    }
+
+    // Check if there are any fields to update
+    if (Object.keys(updateFields).length === 0) {
+      console.log("No fields to update");
+      return res.status(400).json({ message: "No fields to update" });
+    }
+
+    console.log("=== Updating user with fields ===");
+    console.log("Update fields:", updateFields);
+
+    const updateUser = await UserModel.findByIdAndUpdate(
+      userId,
+      updateFields,
+      { new: true }
+    ).select("-password");
+
+    if (!updateUser) {
+      console.log("User not found for update");
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    console.log("=== User updated successfully ===");
+    console.log("Updated user:", updateUser);
+
+    res.json({ message: "Profile updated successfully", updateUser });
+
+  } catch (error) {
+    console.error("=== Error in editProfile ===");
+    console.error("Error type:", error.constructor.name);
+    console.error("Error message:", error.message);
+    console.error("Error stack:", error.stack);
+
+    // Clean up any uploaded file on error
+    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+      try {
+        fs.unlinkSync(req.file.path);
+        console.log("Cleaned up local file after error");
+      } catch (cleanupError) {
+        console.error("Error cleaning up file:", cleanupError);
+      }
+    }
+
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+      stack: error.stack
+    });
+  }
 }
-
-
-
-//new code
-
-// exports.editProfile = async (req, res) => {
-//   try {
-//     const { name, username, password, email } = req.body;
-//     const userId = req.userInfo.id;
-
-//     // Find current user
-//     let updateFields = { name, username, email };
-
-//     // Handle profile image only if provided
-//     if (req.file) {
-//       const fileurl = await cloudnaryFileUpload(req.file.path);
-//       fs.unlinkSync(req.file.path); // delete local file
-//       updateFields.profilePic = fileurl;
-//     }
-
-//     // Handle password only if provided
-//     if (password && password.trim() !== "") {
-//       const hashPassword = await bcryptjs.hash(password, 12);
-//       updateFields.password = hashPassword;
-//     }
-
-//     // Update user
-//     const updateUser = await UserModel.findByIdAndUpdate(
-//       userId,
-//       updateFields,
-//       { new: true }
-//     );
-
-//     res.json({ message: "Profile updated", updateUser });
-
-//   } catch (error) {
-//     console.error("Error in editProfile:", error);
-//     res.status(500).json({ message: "Server error", error: error.message });
-//   }
-// };

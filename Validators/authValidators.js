@@ -23,8 +23,8 @@ exports.signupValidator = [
     .notEmpty()
     .isLength({ min: 6 })
     .isAlphanumeric()
-  .withMessage("required password"),
-    
+    .withMessage("required password"),
+
 
   // (req, res, next) => {
   //   const results = validationResult(req);
@@ -41,22 +41,22 @@ exports.signupValidator = [
 ];
 
 
-  exports.loginValidator = [
-    body("email").trim().isEmail().withMessage("required email"),
-    body("password").isString().withMessage("required password"),
-    // (req, res, next) => {
-    //   const results = validationResult(req)
-    //   if (!results.isEmpty()) {
-    //     const err = {
-    //       statusCode: 400,
-    //       message: "validation error",
-    //       errors: results.errors,
-    //     }
-    //     next(err);
-    //   }
-    //   next();
-    // }
-  ];
+exports.loginValidator = [
+  body("email").trim().isEmail().withMessage("required email"),
+  body("password").isString().withMessage("required password"),
+  // (req, res, next) => {
+  //   const results = validationResult(req)
+  //   if (!results.isEmpty()) {
+  //     const err = {
+  //       statusCode: 400,
+  //       message: "validation error",
+  //       errors: results.errors,
+  //     }
+  //     next(err);
+  //   }
+  //   next();
+  // }
+];
 
 
 exports.tokenValidator = [
@@ -92,16 +92,26 @@ exports.editProfileValidator = [
 
 
 
-exports.validateMiddleware = (req, res, next) => { 
+exports.validateMiddleware = (req, res, next) => {
+  console.log("=== Validation Middleware ===");
+  console.log("Request body:", req.body);
+  console.log("Request file:", req.file);
 
-  const results = validationResult(req)
-      if (!results.isEmpty()) {
-        const err = {
-          statusCode: 400,
-          message: "validations error",
-          errors: results.errors,
-        };
-        next(err);
-      }
-      next();
+  const results = validationResult(req);
+  console.log("Validation results:", results.array());
+
+  if (!results.isEmpty()) {
+    console.log("=== Validation errors found ===");
+    console.log("Errors:", results.errors);
+
+    const err = {
+      statusCode: 400,
+      message: "validations error",
+      errors: results.errors,
+    };
+    return next(err);
+  }
+
+  console.log("Validation passed");
+  next();
 };
