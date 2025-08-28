@@ -12,8 +12,8 @@ exports.getProfile = async (req, res, next) => {
     let user;
 
     if (userRole === "manager") {
-      // Manager sees all employees
-      user = await UserModel.find({ role: "employee" }).select("-password");
+      // Manager sees only their own profile
+      user = await UserModel.findById(userId).select("-password");
     } else {
       // Employee sees only their own profile
       user = await UserModel.findById(userId).select("-password");
