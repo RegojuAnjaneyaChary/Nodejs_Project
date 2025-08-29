@@ -1,78 +1,9 @@
-// const { UserModel } = require("../Models/authModel.js");
-// const { TaskModel } = require("../Models/taskModel.js")
-// const mongoose = require("mongoose");
-
-// exports.getAllemployees = async(req, res, next) => {
-//    try {
-//        const employees = await UserModel.find().where({ role: "employee" });
-//               res.json({ message: "employee information", data: employees });
-
-//    } catch (error) {
-//        console.log(error)
-//            const err = { statusCode: 400, message: error.message };
-//            next(err);
-//        }
-
-
-//    }
-
-// exports.createTicket = async(req, res, next) => {
-//     try {
-//         const { title, description, assignTo } = req.body;
-
-//         const userId = req.userInfo._id;
-//         console.log(userId);
-//         const createTask = await TaskModel.create({
-//             title: title,
-//             description: description,
-//             assignTo: assignTo,
-//             createdBy:userId,
-//         });
-//         res.status(200).json({ message: "Task created successfully", task: createTask });
-
-//     } catch (error) {
-//         const err = { statusCode: 400, message: error.message };
-//            next(err);
-
-//     }
-// };
-
-// exports.getAllTickets = async(req, res, next) => {
-//     try {
-//         const tickets = await TaskModel.find().where({
-//             createdBy: req.userInfo._id,
-
-//         }).populate("assignTo")
-//             .populate("createdBy");
-//         res.json({ message: "your assigned tasks", data: tickets });
-
-//    } catch (error) {
-//         console.log(error)
-//        const err = { statusCode: 400, message: error.message  };
-//            next(err);
-
-//    }
-// };
-
-// exports.getTicketsById = async(req, res, next) => {
-//     try {
-//         const ticketID = req.params.ticketID;
-//         console.log(ticketID)// user here only task ids not user ids
-//         const task = await TaskModel.findOne({_id:ticketID}).populate("createdBy").populate("assignTo");
-//       res.json({ message: "Task Information", task });
-//   } catch (error) {
-//         console.log(error)
-//         const err = { statusCode: 400, message: error.message  };
-//         next(err);
-//       }
-
-// };
-
-
 
 const { UserModel } = require("../Models/authModel.js");
 const { TaskModel } = require("../Models/taskModel.js");
 const mongoose = require("mongoose");
+const transporter  = require("../Utils/mailer.js");
+
 
 exports.getAllemployees = async (req, res, next) => {
     try {
@@ -84,6 +15,13 @@ exports.getAllemployees = async (req, res, next) => {
         next(err);
     }
 };
+
+
+
+
+
+
+
 
 // ✅ Manager deletes an employee profile
 exports.deleteEmployee = async (req, res, next) => {
@@ -111,24 +49,85 @@ exports.deleteEmployee = async (req, res, next) => {
     }
 };
 
+// exports.createTicket = async (req, res, next) => {
+//     try {
+//         const { title, description, assignTo } = req.body;
+//         const userId = req.userInfo._id;
+
+//         const createTask = await TaskModel.create({
+//             title,
+//             description,
+//             assignTo,
+//             createdBy: userId,
+//         });
+
+//         res.status(200).json({ message: "Task created successfully", task: createTask });
+//     } catch (error) {
+//         const err = { statusCode: 400, message: error.message };
+//         next(err);
+//     }
+// };
+
+
+//add mail
+
 exports.createTicket = async (req, res, next) => {
-    try {
-        const { title, description, assignTo } = req.body;
-        const userId = req.userInfo._id;
+  try {
+    const { title, description, assignTo, employeeEmail } = req.body;
+    const userId = req.userInfo._id;
 
-        const createTask = await TaskModel.create({
-            title,
-            description,
-            assignTo,
-            createdBy: userId,
-        });
+    // Check if assigned employee exists
+    const employee = await UserModel.findOne({ _id: assignTo, role: "employee" });
+    if (!employee) return res.status(404).json({ message: "Assigned employee not found" });
 
-        res.status(200).json({ message: "Task created successfully", task: createTask });
-    } catch (error) {
-        const err = { statusCode: 400, message: error.message };
-        next(err);
-    }
+    // Create Task
+    const createTask = await TaskModel.create({
+      title,
+      description,
+      assignTo,
+      createdBy: userId,
+    });
+
+    // Prepare recipients
+    const recipients = [employee.email]; // always send to employee
+    if (employeeEmail && !recipients.includes(employeeEmail)) recipients.push(employeeEmail);
+
+    // Mail options
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: recipients,
+      subject: `📌 New Task Assigned: ${title}`,
+      html: `
+        <h2>Hello ${employee.name},</h2>
+        <p>You have been assigned a new task by your manager.</p>
+        <p><b>Title:</b> ${title}</p>
+        <p><b>Description:</b> ${description}</p>
+        <p>Please login to the Task Manager to view details.</p>
+        <br/>
+        <p>Regards,<br/>Task Manager System</p>
+      `,
+    };
+
+    // Send Email
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({
+      message: "Task created successfully & email sent",
+      task: createTask,
+    });
+
+  } catch (error) {
+    console.error("Error creating task:", error);
+    next({ statusCode: 400, message: error.message });
+  }
 };
+
+
+
+
+
+
+
 
 exports.getAllTickets = async (req, res, next) => {
     try {
