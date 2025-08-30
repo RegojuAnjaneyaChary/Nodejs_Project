@@ -71,16 +71,69 @@ exports.deleteEmployee = async (req, res, next) => {
 
 //add mail
 
+// exports.createTicket = async (req, res, next) => {
+//   try {
+//     const { title, description, assignTo, employeeEmail } = req.body;
+//     const userId = req.userInfo._id;
+
+//     // Check if assigned employee exists
+//     const employee = await UserModel.findOne({ _id: assignTo, role: "employee" });
+//     if (!employee) return res.status(404).json({ message: "Assigned employee not found" });
+
+//     // Create Task
+//     const createTask = await TaskModel.create({
+//       title,
+//       description,
+//       assignTo,
+//       createdBy: userId,
+//     });
+
+//     // Prepare recipients
+//     const recipients = [employee.email]; // always send to employee
+//     if (employeeEmail && !recipients.includes(employeeEmail)) recipients.push(employeeEmail);
+
+//     // Mail options
+//     const mailOptions = {
+//       from: process.env.EMAIL_USER,
+//       to: recipients,
+//       subject: `📌 New Task Assigned: ${title}`,
+//       html: `
+//         <h2>Hello ${employee.name},</h2>
+//         <p>You have been assigned a new task by your manager.</p>
+//         <p><b>Title:</b> ${title}</p>
+//         <p><b>Description:</b> ${description}</p>
+//         <p>Please login to the Task Manager to view details.</p>
+//         <br/>
+//         <p>Regards,<br/>Task Manager System</p>
+//       `,
+//     };
+
+//     // Send Email
+//     await transporter.sendMail(mailOptions);
+
+//     res.status(200).json({
+//       message: "Task created successfully & email sent",
+//       task: createTask,
+//     });
+
+//   } catch (error) {
+//     console.error("Error creating task:", error);
+//     next({ statusCode: 400, message: error.message });
+//   }
+// };
+
+
+
 exports.createTicket = async (req, res, next) => {
   try {
     const { title, description, assignTo, employeeEmail } = req.body;
     const userId = req.userInfo._id;
 
-    // Check if assigned employee exists
+    // Find employee
     const employee = await UserModel.findOne({ _id: assignTo, role: "employee" });
     if (!employee) return res.status(404).json({ message: "Assigned employee not found" });
 
-    // Create Task
+    // Create task
     const createTask = await TaskModel.create({
       title,
       description,
@@ -89,11 +142,11 @@ exports.createTicket = async (req, res, next) => {
     });
 
     // Prepare recipients
-    const recipients = [employee.email]; // always send to employee
+    const recipients = [employee.email];
     if (employeeEmail && !recipients.includes(employeeEmail)) recipients.push(employeeEmail);
 
-    // Mail options
-    const mailOptions = {
+    // Send email
+    await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: recipients,
       subject: `📌 New Task Assigned: ${title}`,
@@ -106,21 +159,18 @@ exports.createTicket = async (req, res, next) => {
         <br/>
         <p>Regards,<br/>Task Manager System</p>
       `,
-    };
-
-    // Send Email
-    await transporter.sendMail(mailOptions);
+    });
 
     res.status(200).json({
       message: "Task created successfully & email sent",
       task: createTask,
     });
-
   } catch (error) {
     console.error("Error creating task:", error);
     next({ statusCode: 400, message: error.message });
   }
 };
+
 
 
 
