@@ -141,9 +141,13 @@ exports.createTicket = async (req, res, next) => {
       createdBy: userId,
     });
 
-    // Prepare recipients
-    const recipients = [employee.email];
-    if (employeeEmail && !recipients.includes(employeeEmail)) recipients.push(employeeEmail);
+      // Prepare recipients
+      const recipients = [employee.email];
+if (employeeEmail && employeeEmail.trim() !== "" && !recipients.includes(employeeEmail)) {
+  recipients.push(employeeEmail);
+}
+    // const recipients = [employee.email];
+    // if (employeeEmail && !recipients.includes(employeeEmail)) recipients.push(employeeEmail);
 
     // Send email
     await transporter.sendMail({

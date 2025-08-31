@@ -1,4 +1,6 @@
-const { TaskModel } = require("../Models/taskModel.js")
+const { TaskModel } = require("../Models/taskModel.js");
+
+const mongoose = require("mongoose");
 
 exports.viewAssignedTckets = async (req, res, next) => { // here we login userid and assign userid same is there or not check in database then outputwill come
     try {
@@ -91,3 +93,81 @@ exports.viewdcommetToTicketbyid = async (req, res, next) => {
     }
 
 }
+////////////////////////////
+
+
+exports.editCommentById = async (req, res, next) => {
+    try {
+        let { ticketID, commentID } = req.params;
+        const { comment } = req.body;
+
+        // Clean IDs
+        ticketID = ticketID.trim();
+        commentID = commentID.trim();
+
+        // Validate ObjectId format
+        if (!mongoose.Types.ObjectId.isValid(ticketID) || !mongoose.Types.ObjectId.isValid(commentID)) {
+            return res.status(400).json({ message: "Invalid ticketID or commentID" });
+        }
+
+        const task = await TaskModel.findById(ticketID);
+        if (!task) return res.status(404).json({ message: "Ticket not found" });
+
+        const commentObj = task.comments.id(commentID);
+        if (!commentObj) return res.status(404).json({ message: "Comment not found" });
+
+        // Authorization check
+        if (commentObj.commentedBy.toString() !== req.userInfo._id.toString()) {
+            return res.status(403).json({ message: "You can only edit your own comment" });
+        }
+
+        commentObj.comment = comment; // Update comment
+        await task.save(); // Save document
+
+        res.json({ message: "Comment updated successfully", data: task });
+    } catch (error) {
+        console.error("Edit Comment Error:", error);
+        next({ statusCode: 500, message: error.message });
+    }
+
+};
+
+
+
+
+
+
+
+////////////////
+
+exports.deleteCommentById = async (req, res, next) => {
+    try {
+        const { ticketID, commentID } = req.params;
+
+        const cleanTicketID = ticketID.trim();
+        const cleanCommentID = commentID.trim();
+
+        if (!req.userInfo || !req.userInfo._id) {
+            return res.status(403).json({ message: "Unauthorized" });
+        }
+
+        const task = await TaskModel.findById(cleanTicketID);
+        if (!task) return res.status(404).json({ message: "Ticket not found" });
+
+        const commentObj = task.comments.id(cleanCommentID);
+        if (!commentObj) return res.status(404).json({ message: "Comment not found" });
+
+        if (commentObj.commentedBy.toString() !== req.userInfo._id.toString()) {
+            return res.status(403).json({ message: "You can only delete your own comment" });
+        }
+
+        // ✅ Use deleteOne instead of remove()
+        await commentObj.deleteOne();
+        await task.save();
+
+        res.json({ message: "Comment deleted successfully", data: task });
+    } catch (error) {
+        console.error(error);
+        next({ statusCode: 400, message: error.message });
+    }
+};
